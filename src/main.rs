@@ -26,6 +26,7 @@ fn main() {
     let mut track_listings = vec![];
     let mut author = None;
     let mut album_cover = None;
+
     for node in document.tree.nodes() {
         let value = node.value();
         if value.is_element()
@@ -100,6 +101,7 @@ fn main() {
             track_listings.push(tracks);
         }
     }
+
     println!(
         "Here are the tracks found for the album \"{}\", authored by \"{}\":\n[",
         page.get_title().unwrap(),
@@ -116,6 +118,22 @@ fn main() {
         println!("]\nSince there is more than one track listing, an explicit specification of which listings should be included in the download is required. Please specify at least one item from the list to download. List the listing number of each listing to include, in order (zero indexed).");
         return;
     }
+
+    let mut tracklist = vec![];
+    for listing in listings_to_use {
+        for track in track_listings[listing].iter() {
+            let mut trackname = String::from(track.split("\"").nth(1).unwrap());
+            let mut remove_patterns = vec![String::from(" (song)")];
+            if let Some(author) = author {
+                remove_patterns.push(String::from(" (") + &author + " song)");
+            }
+            for pattern in remove_patterns {
+                trackname = trackname.replace(&pattern, "");
+            }
+            tracklist.push(trackname);
+        }
+    }
+
     let mut cover_url = None;
     if let Some(album_cover) = album_cover {
         let cover_name = album_cover.split("File:").nth(1).unwrap();
@@ -125,9 +143,15 @@ fn main() {
             }
         }
     }
+    let mut cover_image = None;
     if let Some(cover_url) = cover_url {
         println!("Here's the URL to the album cover: {}", cover_url);
         let cover = reqwest::blocking::get(cover_url).unwrap().bytes().unwrap();
         let cover = image::load_from_memory(&cover).unwrap();
+        cover_image = Some(cover);
+    }
+
+    for track in tracklist {
+        println!("{}", track);
     }
 }
