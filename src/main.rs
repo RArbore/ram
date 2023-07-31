@@ -43,7 +43,8 @@ fn main() {
                     .as_element()
                     .unwrap()
                     .attr("title")
-                    .unwrap(),
+                    .unwrap()
+                    .replace(" (band)", ""),
             );
         } else if value.is_element()
             && value.as_element().unwrap().has_class(
@@ -105,7 +106,7 @@ fn main() {
     println!(
         "Here are the tracks found for the album \"{}\", authored by \"{}\":\n[",
         page.get_title().unwrap(),
-        author.unwrap_or("Unknown")
+        author.clone().unwrap_or(String::from("Unknown"))
     );
     for tracks in track_listings.iter() {
         println!("  [");
@@ -124,8 +125,9 @@ fn main() {
         for track in track_listings[listing].iter() {
             let mut trackname = String::from(track.split("\"").nth(1).unwrap());
             let mut remove_patterns = vec![String::from(" (song)")];
-            if let Some(author) = author {
-                remove_patterns.push(String::from(" (") + &author + " song)");
+            if let Some(author) = &author {
+                remove_patterns.push(String::from(" (") + author + " song)");
+                remove_patterns.push(String::from(" (") + author + " EP)");
             }
             for pattern in remove_patterns {
                 trackname = trackname.replace(&pattern, "");
