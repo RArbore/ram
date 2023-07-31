@@ -127,5 +127,7 @@ fn main() {
     }
     if let Some(cover_url) = cover_url {
         println!("Here's the URL to the album cover: {}", cover_url);
+        let cover = reqwest::blocking::get(cover_url).unwrap().bytes().unwrap();
+        let cover = image::load_from_memory(&cover).unwrap();
     }
 }
