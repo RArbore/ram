@@ -45,6 +45,7 @@ fn main() -> Result<(), String> {
             "mp3",
             "--audio-quality",
             "5",
+            "--force-ipv4",
             "-o",
             &playlist_specifier,
             &playlist_url,
@@ -56,6 +57,15 @@ fn main() -> Result<(), String> {
             .expect("Couldn't spawn yt-dlp process.");
         assert!(ytdlp_code.success(), "yt-dlp returned bad error code.");
     }
+
+    let mut songs = std::fs::read_dir(&album_name)
+        .ok()
+        .ok_or("Couldn't list files in download directory.")?
+        .map(|x| x.unwrap().path())
+        .collect::<Vec<std::path::PathBuf>>();
+    songs.sort();
+
+    metadata::update_album_metadata(songs, metadata)?;
 
     Ok(())
 }
