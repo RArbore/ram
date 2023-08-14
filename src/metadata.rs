@@ -1,13 +1,13 @@
 extern crate wikipedia;
 use scraper::Html;
 
-pub struct Album {
+pub struct AlbumInfo {
     name: String,
     track_names: Vec<String>,
     cover: Option<image::DynamicImage>,
 }
 
-impl std::fmt::Display for Album {
+impl std::fmt::Display for AlbumInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "Album Name: {}\n\n", self.name)?;
         write!(f, "Track Listing:\n")?;
@@ -26,10 +26,7 @@ impl std::fmt::Display for Album {
     }
 }
 
-pub fn scrape_wikipedia(
-    album_name: &str,
-    track_list_nums: &[usize],
-) -> Result<Album, &'static str> {
+pub fn scrape_wikipedia(album_name: &str, track_list_nums: &[usize]) -> Result<AlbumInfo, String> {
     let wiki = wikipedia::Wikipedia::<wikipedia::http::default::Client>::default();
     let page = wiki.page_from_title(album_name.to_string());
     let content = page
@@ -116,10 +113,6 @@ pub fn scrape_wikipedia(
         }
     }
 
-    if track_list_nums.len() == 0 && track_listings.len() > 1 {
-        return Err("Since there is more than one track listing, an explicit specification of which listings should be included in the download is required. Please specify at least one item from the list to download. List the listing number of each listing to include, in order (zero indexed).");
-    }
-
     let mut tracklist = vec![];
     for listing in track_list_nums {
         for track in track_listings[*listing].iter() {
@@ -147,12 +140,17 @@ pub fn scrape_wikipedia(
     }
     let mut cover_image = None;
     if let Some(cover_url) = cover_url {
-        let cover = reqwest::blocking::get(cover_url).unwrap().bytes().unwrap();
-        let cover = image::load_from_memory(&cover).unwrap();
+        let cover = reqwest::blocking::get(cover_url.clone())
+            .unwrap()
+            .bytes()
+            .unwrap();
+        let cover = image::load_from_memory(&cover)
+            .ok()
+            .ok_or(format!("Couldn't load image from cover at: {}", cover_url))?;
         cover_image = Some(cover);
     }
 
-    Ok(Album {
+    Ok(AlbumInfo {
         name: album_name.to_string(),
         track_names: tracklist,
         cover: cover_image,
